@@ -1,5 +1,5 @@
 import express from "express";
-import integrationData from "../constants/telex-integration.json";
+import * as integrationData from "../constants/telex-integration.json";
 
 const router = express.Router();
 
