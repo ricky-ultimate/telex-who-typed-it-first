@@ -3,17 +3,18 @@ import axios from "axios";
 
 const messageCache: Map<string, string> = new Map();
 
-export const processMessageSpeed = async (message: string) => {
+export const processMessageSpeed = async (username: string, message: string) => {
     if (messageCache.has(message)) {
         const firstUser = messageCache.get(message);
         await sendSpeedGameResultToTelex(firstUser as string, message);
         return { message: `🏆 ${firstUser} typed it first!` };
     }
 
-    messageCache.set(message, "Unknown User");
-    setTimeout(() => messageCache.delete(message), 5000); // Message expires after 5 seconds
-    return { message }; // No modification, return as is
+    messageCache.set(message, username); // ✅ Now storing the actual username
+    setTimeout(() => messageCache.delete(message), 5000);
+    return { message };
 };
+
 
 const sendSpeedGameResultToTelex = async (firstUser: string, message: string) => {
     if (!ENV.TELEX_WEBHOOK_URL) return;
