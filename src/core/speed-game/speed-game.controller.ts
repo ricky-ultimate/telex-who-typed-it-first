@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { processMessageSpeed } from "./speed-game.service";
-import logger from "../../uilts/logger.utils";
+import logger from "../../utils/logger.utils";
 
 export const checkMessageSpeed = async (req: Request, res: Response) => {
     try {
