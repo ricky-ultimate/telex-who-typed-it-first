@@ -1,0 +1,72 @@
+{
+    "data": {
+      "date": {
+        "created_at": "2025-02-22",
+        "updated_at": "2025-02-22"
+      },
+      "descriptions": {
+        "app_name": "Who Typed It First? Speed Game",
+        "app_description": "A fun competitive game that detects when multiple users type the same message and announces who was first.",
+        "app_url": "https://telex-who-typed-it-first.onrender.com",
+        "app_logo": "https://your-logo-url.com/logo.png",
+        "background_color": "#FFD700"
+      },
+      "integration_category": "Communication & Collaboration",
+      "integration_type": "modifier",
+      "is_active": true,
+      "output": [
+        {
+          "label": "Public Announcements",
+          "value": true
+        },
+        {
+          "label": "Leaderboard Tracking",
+          "value": false
+        }
+      ],
+      "key_features": [
+        "Detects duplicate messages in a Telex channel.",
+        "Announces who typed the message first.",
+        "Encourages engagement and fun competition.",
+        "Supports configurable settings for time windows."
+      ],
+      "permissions": {
+        "monitoring_user": {
+          "always_online": true,
+          "display_name": "Speed Game Monitor"
+        }
+      },
+      "settings": [
+        {
+          "label": "Time Window for Duplicate Detection (seconds)",
+          "type": "number",
+          "description": "Set the time (in seconds) within which duplicate messages must be detected.",
+          "default": 5,
+          "required": true
+        },
+        {
+          "label": "Enable Leaderboard",
+          "type": "checkbox",
+          "description": "Enable leaderboard tracking for fastest users.",
+          "default": false
+        },
+        {
+          "label": "Leaderboard Reset Frequency",
+          "type": "dropdown",
+          "description": "Choose how often the leaderboard should reset.",
+          "required": false,
+          "default": "Weekly",
+          "options": ["Daily", "Weekly", "Monthly"]
+        },
+        {
+          "label": "Notification Format",
+          "type": "radio",
+          "description": "Choose the format of the speed game notifications.",
+          "required": true,
+          "default": "Text",
+          "options": ["Text", "Rich Message"]
+        }
+      ],
+      "target_url": "https://telex-who-typed-it-first.onrender.com/api/speed-game"
+    }
+  }
