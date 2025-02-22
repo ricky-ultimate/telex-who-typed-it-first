@@ -20,5 +20,5 @@ app.use(morgan("dev"));
 app.use("/api/speed-game", speedGameRoutes);
 
 app.listen(ENV.PORT, () => {
-    logger(`🚀 Server running on port ${ENV.PORT}`);
+    logger(`🚀 Server running on port ${ENV.PORT}!`);
 });
