@@ -1,11 +1,13 @@
 {
   "name": "telex-who-typed-it-first",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Detects when multiple users type the same message and announces who was first.",
+  "main": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
