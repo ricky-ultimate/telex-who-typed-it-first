@@ -1,77 +1,98 @@
 import { ENV } from "../../constants/env";
 import axios from "axios";
 
-let lastMessage = "";
-let lastUser = "";
-let resetTimer: NodeJS.Timeout | null = null;
+// ✅ Read values from environment variables
+const ORG_ID = ENV.TELEX_ORG_ID;
+const CHANNEL_ID = ENV.TELEX_CHANNEL_ID;
+const API_URL = `https://ping.telex.im/v1/organisations/${ORG_ID}/channels/${CHANNEL_ID}/messages`;
+const POLL_INTERVAL = 5000; // Poll Telex every 5 seconds
+const DUPLICATE_TIME_WINDOW = 10000; // 10 seconds
 
-export const processMessageSpeed = async (username: string, message: string) => {
-    await sendMessageToTelex(username, message); // ✅ Send every message to Telex
+let lastMessages: Record<string, string> = {}; // Stores { message: username }
 
-    if (message === lastMessage) {
-        await sendSpeedGameResultToTelex(lastUser, username, message);
-
-        // ✅ Reset stored message after five seconds to allow new competitions
-        if (resetTimer) clearTimeout(resetTimer);
-        resetTimer = setTimeout(() => {
-            lastMessage = "";
-            lastUser = "";
-        }, 10000);
-
-        return { message: `🏆 ${lastUser} typed it first!` };
+// ✅ Fetch messages from Telex every 5 seconds
+const fetchMessagesFromTelex = async () => {
+    if (!ORG_ID || !CHANNEL_ID || !ENV.TELEX_API_TOKEN) {
+        console.warn("⚠️ Missing Telex environment variables.");
+        return;
     }
-
-    // ✅ Record new message & user, wait for competitors
-    lastMessage = message;
-    lastUser = username;
-
-    // ✅ Start reset timer to clear message after five seconds
-    if (resetTimer) clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => {
-        lastMessage = "";
-        lastUser = "";
-    }, 5000);
-
-    return { message: "Message recorded and waiting for competition!" };
-};
-
-const sendMessageToTelex = async (username: string, message: string) => {
-    if (!ENV.TELEX_WEBHOOK_URL) return;
-
-    const data = {
-        event_name: "speed_game_message",
-        message: `💬 **${username}**: "${message}"`,
-        status: "info",
-        username: "FastBot"
-    };
 
     try {
-        await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
-            headers: { "Accept": "application/json", "Content-Type": "application/json" }
+        const response = await axios.get(API_URL, {
+            headers: {
+                Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
+                Accept: "application/json",
+            },
         });
-    } catch (error) {
-        console.error("❌ Error sending message to Telex:", error instanceof Error ? error.message : error);
+
+        const messages = response.data.messages;
+        messages.forEach((msg: any) => processMessage(msg));
+
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error("❌ Error fetching messages from Telex:", error.message);
+        } else {
+            console.error("❌ Unknown error occurred while fetching messages.");
+        }
     }
 };
 
+// ✅ Process each new message
+const processMessage = async (msg: any) => {
+    const username = msg.username || "Unknown"; // Extract username from message
+    const messageContent = msg.content.trim();
+
+    console.log(`📩 New Message: ${username}: "${messageContent}"`);
+
+    // ✅ If message is already in memory, declare a winner
+    if (lastMessages[messageContent]) {
+        const firstUser = lastMessages[messageContent];
+        if (firstUser !== username) {
+            await sendSpeedGameResultToTelex(firstUser, username, messageContent);
+        }
+    } else {
+        lastMessages[messageContent] = username;
+
+        // ✅ Remove the message after 10 seconds (to allow new rounds)
+        setTimeout(() => {
+            delete lastMessages[messageContent];
+        }, DUPLICATE_TIME_WINDOW);
+    }
+};
+
+// ✅ Announce the winner in the Telex channel
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
-    if (!ENV.TELEX_WEBHOOK_URL) return;
-
-    const data = {
-        event_name: "speed_game_result",
-        message: `⚡ **Speed Game Alert!**
-        Message: "${message}"
-        🏆 ${firstUser} typed it first!
-        🥈 ${secondUser} was too slow!`,
-        status: "success",
-        username: "FastBot"
-    };
+    if (!ORG_ID || !CHANNEL_ID || !ENV.TELEX_API_TOKEN) {
+        console.warn("⚠️ Missing Telex environment variables.");
+        return;
+    }
 
     try {
-        await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
-            headers: { "Accept": "application/json", "Content-Type": "application/json" }
-        });
-    } catch (error) {
-        console.error("❌ Error sending result to Telex:", error instanceof Error ? error.message : error);
+        await axios.post(API_URL,
+            { content: `⚡ **Speed Game Alert!**
+            Message: "${message}"
+            🏆 ${firstUser} typed it first!
+            🥈 ${secondUser} was too slow!` },
+            {
+                headers: {
+                    Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log("✅ Sent result to Telex successfully.");
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error("❌ Error sending result to Telex:", error.message);
+        } else {
+            console.error("❌ Unknown error occurred while sending result.");
+        }
     }
 };
+
+// ✅ Start polling Telex for new messages
+setInterval(fetchMessagesFromTelex, POLL_INTERVAL);
+
+// ✅ Export fetchMessagesFromTelex as processMessageSpeed
+export { fetchMessagesFromTelex as processMessageSpeed };
