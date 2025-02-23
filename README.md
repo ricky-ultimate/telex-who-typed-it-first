@@ -92,7 +92,7 @@ Use **Postman or CURL** to test the `/api/speed-game` endpoint.
 
 #### ✅ Test Case 1: First Unique Message
 ```
-curl -X POST http://localhost:5000/api/speed-game \
+curl -X POST https://telex-who-typed-it-first.onrender.com/api/speed-game \
      -H "Content-Type: application/json" \
      -d '{"username": "Alice", "message": "Hello World"}'
 ```
@@ -105,7 +105,7 @@ curl -X POST http://localhost:5000/api/speed-game \
 
 #### ✅ Test Case 2: Duplicate Message (Within 5 Seconds)
 ```
-curl -X POST http://localhost:5000/api/speed-game \
+curl -X POST https://telex-who-typed-it-first.onrender.com/speed-game \
      -H "Content-Type: application/json" \
      -d '{"username": "Bob", "message": "Hello World"}'
 ```
@@ -118,9 +118,7 @@ curl -X POST http://localhost:5000/api/speed-game \
 
 ### 2. Verify Inside Telex
 1. Open your **Telex channel**
-2. Type: `"Hello World"`
-3. Have another user type the same message **within 5 seconds**
-4. The bot should reply:
+2. The bot should reply:
    ```
    ⚡ Speed Game Alert!
    Message: "Hello World"
