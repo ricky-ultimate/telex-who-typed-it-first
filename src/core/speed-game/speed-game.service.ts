@@ -42,7 +42,7 @@ const sendMessageToTelex = async (username: string, message: string) => {
         event_name: "speed_game_message",
         message: `💬 **${username}**: "${message}"`,
         status: "info",
-        username: "FastBot"
+        username: username
     };
 
     try {
