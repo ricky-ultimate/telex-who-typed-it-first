@@ -48,8 +48,17 @@ const fetchMessagesFromTelex = async () => {
             },
         });
 
-        const messages = response.data.messages;
+        console.log("🔍 Full API Response:", response.data); // Log full response
+
+        const messages = response.data?.data?.messages; // ✅ Use optional chaining
+
+        if (!messages || !Array.isArray(messages)) {
+            console.warn("⚠️ No messages found or incorrect format.");
+            return;
+        }
+
         messages.forEach((msg: any) => processMessage(msg));
+
     } catch (error: unknown) {
         if (error instanceof Error) {
             console.error("❌ Error fetching messages from Telex:", error.message);
@@ -58,6 +67,7 @@ const fetchMessagesFromTelex = async () => {
         }
     }
 };
+
 
 // ✅ Process each new message from Telex
 const processMessage = async (msg: any) => {
