@@ -1,4 +1,4 @@
-import { processMessageSpeed } from "../src/core/speed-game/speed-game.service";
+import { processMessageSpeed } from "../core/speed-game/speed-game.service";
 
 describe("Speed Game Service", () => {
   it("should record the first message", async () => {

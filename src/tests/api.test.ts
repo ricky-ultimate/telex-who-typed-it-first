@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../src/index"; // Ensure your `index.ts` exports `app`
+import app from "../index"
 
 describe("Speed Game API", () => {
   it("should return 400 if message is missing", async () => {
