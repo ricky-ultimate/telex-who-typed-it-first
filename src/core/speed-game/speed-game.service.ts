@@ -1,61 +1,62 @@
 import { ENV } from "../../constants/env";
 import axios from "axios";
 
-let lastMessage = "";
-let lastUser = "";
-let resetTimer: NodeJS.Timeout | null = null;
+let lastMessage = ""; // Stores the last message globally
+let lastUser = ""; // Stores the last user globally
 
 export const processMessageSpeed = async (username: string, message: string) => {
-    await sendMessageToTelex(username, message); // ✅ Send every message to Telex
+    // ✅ Send each message to Telex before checking for a winner
+    await sendMessageToTelex(username, message);
 
     if (message === lastMessage) {
         await sendSpeedGameResultToTelex(lastUser, username, message);
-
-        // ✅ Reset stored message after five seconds to allow new competitions
-        if (resetTimer) clearTimeout(resetTimer);
-        resetTimer = setTimeout(() => {
-            lastMessage = "";
-            lastUser = "";
-        }, 5000);
-
         return { message: `🏆 ${lastUser} typed it first!` };
     }
 
-    // ✅ Record new message & user, wait for competitors
+    // Update the last message & user for the next request
     lastMessage = message;
     lastUser = username;
-
-    // ✅ Start reset timer to clear message after five seconds
-    if (resetTimer) clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => {
-        lastMessage = "";
-        lastUser = "";
-    }, 5000);
 
     return { message: "Message recorded and waiting for competition!" };
 };
 
+// ✅ Sends each user's message to Telex immediately
 const sendMessageToTelex = async (username: string, message: string) => {
-    if (!ENV.TELEX_WEBHOOK_URL) return;
+    if (!ENV.TELEX_WEBHOOK_URL) {
+        console.warn("⚠️ TELEX_WEBHOOK_URL is missing!");
+        return;
+    }
 
     const data = {
         event_name: "speed_game_message",
         message: `💬 **${username}**: "${message}"`,
         status: "info",
-        username: username
+        username
     };
 
     try {
         await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
-            headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
         });
-    } catch (error) {
-        console.error("❌ Error sending message to Telex:", error instanceof Error ? error.message : error);
+        console.log(`✅ Sent user message from ${username} to Telex.`);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error("❌ Error sending message to Telex:", error.message);
+        } else {
+            console.error("❌ An unknown error occurred while sending message to Telex.");
+        }
     }
 };
 
+// ✅ Sends the winner announcement under "FastBot"
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
-    if (!ENV.TELEX_WEBHOOK_URL) return;
+    if (!ENV.TELEX_WEBHOOK_URL) {
+        console.warn("⚠️ TELEX_WEBHOOK_URL is missing!");
+        return;
+    }
 
     const data = {
         event_name: "speed_game_result",
@@ -64,14 +65,22 @@ const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string,
         🏆 ${firstUser} typed it first!
         🥈 ${secondUser} was too slow!`,
         status: "success",
-        username: "FastBot"
+        username: "FastBot" // ✅ Now uses "FastBot" instead of the winner's name
     };
 
     try {
         await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
-            headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
         });
-    } catch (error) {
-        console.error("❌ Error sending result to Telex:", error instanceof Error ? error.message : error);
+        console.log("✅ Sent result to Telex successfully as FastBot.");
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error("❌ Error sending result to Telex:", error.message);
+        } else {
+            console.error("❌ An unknown error occurred while sending result to Telex.");
+        }
     }
 };
