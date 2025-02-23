@@ -25,3 +25,5 @@ app.use("/api/integration", integrationRoutes);
 app.listen(ENV.PORT, () => {
     logger(`🚀 Server running on port ${ENV.PORT}!`);
 });
+
+export default app;

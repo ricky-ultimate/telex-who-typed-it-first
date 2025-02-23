@@ -17,6 +17,8 @@ This is a **Telex Modifier Integration** that detects when multiple users type t
 - **Helmet** - Security headers
 - **CORS** - Cross-origin request handling
 - **Morgan** - Request logging
+- **Jest** - Unit testing
+- **Supertest** - API testing
 - **Render** - Deployment hosting
 
 ## Folder Structure
@@ -25,6 +27,7 @@ This is a **Telex Modifier Integration** that detects when multiple users type t
   - **core/speed-game/** → Main game logic
   - **routes/** → Express API routes
   - **utils/** → Helper utilities
+- **tests/** → Unit & API tests
 - **.env** → Environment variables
 - **README.md** → This file
 - **package.json** → Node.js dependencies
@@ -75,7 +78,18 @@ The integration JSON is accessible at:
 
 ## 🧪 Testing the Integration
 
-### 1️⃣ Verify API Works Locally
+### 1️⃣ Run Unit Tests
+Ensure you have installed Jest:
+```sh
+npm install --save-dev jest ts-jest @types/jest supertest @types/supertest
+```
+
+Run tests:
+```sh
+npm test
+```
+
+### 2️⃣ Verify API Works Locally
 Use **Postman or CURL** to test the `/api/speed-game` endpoint.
 
 #### ✅ Test Case 1: First Unique Message
@@ -104,7 +118,7 @@ curl -X POST http://localhost:5000/api/speed-game \
 }
 ```
 
-### 2️⃣ Verify Inside Telex
+### 3️⃣ Verify Inside Telex
 1. Open your **Telex channel**
 2. Type: `"Hello World"`
 3. Have another user type the same message **within 5 seconds**
@@ -125,6 +139,12 @@ git push origin main
 ```
 Render will automatically detect and deploy changes.
 
+## 📸 Screenshots of Integration Working in Telex
+
+🔹 **Example: Duplicate Message Detected**
+![Telex Screenshot 2](assets/image.png)
+
+> **Note:** Upload screenshots to **Imgur, GitHub Issues, or Cloudinary** and replace `your-image-url.com` with the actual image URL.
 
 ## 🎯 Future Enhancements
 - 🏆 **Leaderboard tracking for fastest users**
