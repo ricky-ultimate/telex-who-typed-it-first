@@ -3,7 +3,7 @@ import axios from "axios";
 
 // ✅ Read values from environment variables
 const CHANNEL_ID = ENV.TELEX_CHANNEL_ID;
-const API_URL = `https://api.telex.im/api/v1/${CHANNEL_ID}/messages`;
+const API_URL = `https://api.telex.im/api/v1/channels/${CHANNEL_ID}/messages`;
 const WEBHOOK_URL = ENV.TELEX_WEBHOOK_URL;
 const POLL_INTERVAL = 5000; // Poll Telex every 5 seconds
 const DUPLICATE_TIME_WINDOW = 10000; // 10 seconds
