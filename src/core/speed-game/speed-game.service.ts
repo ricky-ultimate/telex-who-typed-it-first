@@ -31,17 +31,18 @@ const sendMessageToTelex = async (username: string, message: string) => {
         event_name: "speed_game_message",
         message: `💬 **${username}**: "${message}"`,
         status: "info",
-        username: "FastBot" // 🔹 Instead of sending as Alice/Bob, send as "FastBot"
+        username: "FastBot"
     };
 
     try {
-        await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
+        const response = await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
             headers: {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }
         });
-        console.log(`✅ Sent user message from ${username} to Telex.`);
+
+        console.log(`✅ Sent user message from ${username} to Telex. Response:`, response.data);
     } catch (error: unknown) {
         if (error instanceof Error) {
             console.error("❌ Error sending message to Telex:", error.message);
@@ -50,6 +51,7 @@ const sendMessageToTelex = async (username: string, message: string) => {
         }
     }
 };
+
 
 
 // ✅ Sends the winner announcement under "FastBot"
