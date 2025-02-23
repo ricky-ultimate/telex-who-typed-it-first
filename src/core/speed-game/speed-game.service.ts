@@ -42,7 +42,8 @@ const fetchMessagesFromTelex = async () => {
     }
 
     try {
-        const response = await axios.get(API_URL, {
+        // ✅ Ensure we're fetching up to 50 messages
+        const response = await axios.get(`${API_URL}?limit=50`, {
             headers: {
                 Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
                 Accept: "application/json",
@@ -51,10 +52,11 @@ const fetchMessagesFromTelex = async () => {
 
         console.log("🔍 Full API Response:", response.data); // Log full response
 
-        const messages = response.data?.messages; // ✅ Adjust to match API response
+        // ✅ Fix: Use `data.messages`, handling null case
+        const messages = response.data?.data?.messages || [];
 
-        if (!messages || !Array.isArray(messages)) {
-            console.warn("⚠️ No messages found or incorrect format.");
+        if (!messages.length) {
+            console.warn("⚠️ No messages found in Telex channel.");
             return;
         }
 
@@ -76,14 +78,16 @@ const fetchMessagesFromTelex = async () => {
 // ✅ Process each new message from Telex
 const processMessage = async (msg: any) => {
     const username = msg.username || "Unknown";
-    const messageContent = msg.content.trim();
+    const messageContent = msg.content?.trim() || "";
+
+    if (!messageContent) return;
 
     console.log(`📩 New Message from Telex: ${username}: "${messageContent}"`);
 
     await processMessageSpeed(username, messageContent);
 };
 
-// ✅ Announce the winner in the Telex channel
+// ✅ Announce the winner in the Telex channel via Webhook
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
     if (!WEBHOOK_URL || !CHANNEL_ID) {
         console.warn("⚠️ Missing Telex webhook URL or channel ID.");
