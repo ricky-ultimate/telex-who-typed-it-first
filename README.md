@@ -87,7 +87,7 @@ https://telex-who-typed-it-first.onrender.com/api/integration
 3. **Winner announcement is sent under "FastBot"**, not the winner’s name.
 
 ## Testing the Integration
-### 1. Verify API Works Locally
+### 1. Verify API Works
 Use **Postman or CURL** to test the `/api/speed-game` endpoint.
 
 #### ✅ Test Case 1: First Unique Message
