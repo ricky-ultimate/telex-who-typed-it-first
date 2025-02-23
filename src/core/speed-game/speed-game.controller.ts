@@ -3,17 +3,15 @@ import { processMessageSpeed } from "./speed-game.service";
 import logger from "../../utils/logger.utils";
 
 export const checkMessageSpeed = async (req: Request, res: Response) => {
-    console.log("🔍 Incoming Telex Request:", JSON.stringify(req.body, null, 2)); // ✅ Log request
+    try {
+        const { username, message } = req.body; // ✅ Now extracting username too
+        if (!message || !username) return res.status(400).json({ message: "Username and message are required" });
 
-    // Try extracting message and username from different possible formats
-    const username = req.body.username || req.body.user?.name || req.body.sender;
-    const message = req.body.message || req.body.text || req.body.content;
+        const result = await processMessageSpeed(username, message); // ✅ Passing both username and message
 
-    if (!message || !username) {
-        console.warn("⚠️ Missing username or message:", req.body);
-        return res.status(400).json({ message: "Username and message are required" });
+        return res.json(result); // Must return { "message": "modified_message" }
+    } catch (error) {
+        logger("Error processing speed-game:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
-
-    const result = await processMessageSpeed(username, message);
-    return res.json(result);
 };
