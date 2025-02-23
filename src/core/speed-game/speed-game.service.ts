@@ -31,7 +31,7 @@ const sendMessageToTelex = async (username: string, message: string) => {
         event_name: "speed_game_message",
         message: `💬 **${username}**: "${message}"`,
         status: "info",
-        username
+        username: "FastBot" // 🔹 Instead of sending as Alice/Bob, send as "FastBot"
     };
 
     try {
@@ -50,6 +50,7 @@ const sendMessageToTelex = async (username: string, message: string) => {
         }
     }
 };
+
 
 // ✅ Sends the winner announcement under "FastBot"
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
