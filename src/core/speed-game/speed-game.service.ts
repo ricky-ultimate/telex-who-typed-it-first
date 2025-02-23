@@ -21,31 +21,6 @@ export const processMessageSpeed = async (username: string, message: string) => 
 };
 
 // ✅ Sends each user's message to Telex immediately
-const checkTelexMessageStatus = async (taskId: string): Promise<boolean> => {
-    const CHECK_URL = `${ENV.TELEX_WEBHOOK_URL}/status/${taskId}`;
-
-    for (let attempt = 0; attempt < 5; attempt++) {
-        try {
-            const response = await axios.get(CHECK_URL, {
-                headers: { "Accept": "application/json" }
-            });
-
-            if (response.data.status === "completed") {
-                console.log(`✅ Telex processed message successfully.`);
-                return true;
-            }
-        } catch (error) {
-            console.error("❌ Error checking Telex message status:", error);
-        }
-
-        // Wait for 2 seconds before retrying
-        await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    console.warn("⚠️ Telex did not process the message within the expected time.");
-    return false;
-};
-
 const sendMessageToTelex = async (username: string, message: string) => {
     if (!ENV.TELEX_WEBHOOK_URL) {
         console.warn("⚠️ TELEX_WEBHOOK_URL is missing!");
@@ -56,23 +31,17 @@ const sendMessageToTelex = async (username: string, message: string) => {
         event_name: "speed_game_message",
         message: `💬 **${username}**: "${message}"`,
         status: "info",
-        username: "FastBot"
+        username
     };
 
     try {
-        const response = await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
+        await axios.post(ENV.TELEX_WEBHOOK_URL, data, {
             headers: {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }
         });
-
-        console.log(`✅ Sent user message from ${username} to Telex. Response:`, response.data);
-
-        if (response.data.task_id) {
-            await checkTelexMessageStatus(response.data.task_id);
-        }
-
+        console.log(`✅ Sent user message from ${username} to Telex.`);
     } catch (error: unknown) {
         if (error instanceof Error) {
             console.error("❌ Error sending message to Telex:", error.message);
@@ -81,9 +50,6 @@ const sendMessageToTelex = async (username: string, message: string) => {
         }
     }
 };
-
-
-
 
 // ✅ Sends the winner announcement under "FastBot"
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
