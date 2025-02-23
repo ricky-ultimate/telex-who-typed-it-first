@@ -4,7 +4,8 @@ import axios from "axios";
 // ✅ Read values from environment variables
 const ORG_ID = ENV.TELEX_ORG_ID;
 const CHANNEL_ID = ENV.TELEX_CHANNEL_ID;
-const API_URL = `https://api.telex.im/api/v1/channels/${CHANNEL_ID}/messages`;
+const API_URL = `https://api.telex.im/v1/organisations/${ORG_ID}/channels/${CHANNEL_ID}/messages`;
+const WEBHOOK_URL = ENV.TELEX_WEBHOOK_URL;
 const POLL_INTERVAL = 5000; // Poll Telex every 5 seconds
 const DUPLICATE_TIME_WINDOW = 10000; // 10 seconds
 
@@ -58,21 +59,23 @@ const fetchMessagesFromTelex = async () => {
         }
 
         messages.forEach((msg: any) => processMessage(msg));
-
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            console.error("❌ Error fetching messages from Telex:", error.message);
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            console.error("❌ Telex API Error:", {
+                status: error.response.status,
+                data: error.response.data,
+            });
+        } else if (error instanceof Error) {
+            console.error("❌ Unexpected error:", error.message);
         } else {
             console.error("❌ Unknown error occurred while fetching messages.");
         }
     }
 };
 
-
-
 // ✅ Process each new message from Telex
 const processMessage = async (msg: any) => {
-    const username = msg.username || "Unknown"; // Extract username
+    const username = msg.username || "Unknown";
     const messageContent = msg.content.trim();
 
     console.log(`📩 New Message from Telex: ${username}: "${messageContent}"`);
@@ -82,26 +85,31 @@ const processMessage = async (msg: any) => {
 
 // ✅ Announce the winner in the Telex channel
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
-    if (!ORG_ID || !CHANNEL_ID || !ENV.TELEX_API_TOKEN) {
-        console.warn("⚠️ Missing Telex environment variables.");
+    if (!WEBHOOK_URL || !CHANNEL_ID) {
+        console.warn("⚠️ Missing Telex webhook URL or channel ID.");
         return;
     }
 
     try {
-        await axios.post(API_URL,
-            { content: `⚡ **Speed Game Alert!**\nMessage: "${message}"\n🏆 ${firstUser} typed it first!\n🥈 ${secondUser} was too slow!` },
-            {
-                headers: {
-                    Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        await axios.post(WEBHOOK_URL, {
+            channel_id: CHANNEL_ID,
+            message: `⚡ **Speed Game Alert!**\nMessage: "${message}"\n🏆 ${firstUser} typed it first!\n🥈 ${secondUser} was too slow!`
+        }, {
+            headers: {
+                Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+        });
 
         console.log("✅ Sent result to Telex successfully.");
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            console.error("❌ Error sending result to Telex:", error.message);
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            console.error("❌ Telex API Error:", {
+                status: error.response.status,
+                data: error.response.data,
+            });
+        } else if (error instanceof Error) {
+            console.error("❌ Unexpected error:", error.message);
         } else {
             console.error("❌ Unknown error occurred while sending result.");
         }
