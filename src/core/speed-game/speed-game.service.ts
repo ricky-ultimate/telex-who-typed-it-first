@@ -41,22 +41,16 @@ const fetchMessagesFromTelex = async () => {
     }
 
     try {
-        const response = await axios.post(API_URL, {
-            event_name: "fetch_messages",  // ✅ Required field
-            username: "FastBot",          // ✅ Required field
-            status: "info",               // ✅ Required field
-            message: "Fetching messages", // ✅ Required field
-        }, {
+        const response = await axios.get(API_URL, {
             headers: {
                 Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
                 Accept: "application/json",
-                "Content-Type": "application/json",
             },
         });
 
         console.log("🔍 Full API Response:", response.data); // Log full response
 
-        const messages = response.data?.data?.messages; // ✅ Use optional chaining
+        const messages = response.data?.messages; // ✅ Adjust to match API response
 
         if (!messages || !Array.isArray(messages)) {
             console.warn("⚠️ No messages found or incorrect format.");
