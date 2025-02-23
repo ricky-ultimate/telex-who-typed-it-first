@@ -22,8 +22,10 @@ app.use(morgan("dev"));
 app.use("/api/speed-game", speedGameRoutes);
 app.use("/api/integration", integrationRoutes);
 
-app.listen(ENV.PORT, () => {
-    logger(`🚀 Server running on port ${ENV.PORT}!`);
-});
+if (process.env.NODE_ENV !== "test") {
+    app.listen(ENV.PORT, () => {
+        logger(`🚀 Server running on port ${ENV.PORT}!`);
+    });
+}
 
 export default app;
