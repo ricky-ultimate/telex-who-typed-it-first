@@ -41,7 +41,7 @@
           "label": "Time Window for Duplicate Detection (seconds)",
           "type": "number",
           "description": "Set the time (in seconds) within which duplicate messages must be detected.",
-          "default": 5,
+          "default": 10,
           "required": true
         },
         {
