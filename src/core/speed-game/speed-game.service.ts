@@ -41,10 +41,16 @@ const fetchMessagesFromTelex = async () => {
     }
 
     try {
-        const response = await axios.get(API_URL, {
+        const response = await axios.post(API_URL, {
+            event_name: "fetch_messages",  // ✅ Required field
+            username: "FastBot",          // ✅ Required field
+            status: "info",               // ✅ Required field
+            message: "Fetching messages", // ✅ Required field
+        }, {
             headers: {
                 Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
                 Accept: "application/json",
+                "Content-Type": "application/json",
             },
         });
 
@@ -67,6 +73,7 @@ const fetchMessagesFromTelex = async () => {
         }
     }
 };
+
 
 
 // ✅ Process each new message from Telex
