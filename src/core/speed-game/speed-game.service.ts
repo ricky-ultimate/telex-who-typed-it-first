@@ -2,47 +2,34 @@ import { ENV } from "../../constants/env";
 import axios from "axios";
 
 // ✅ Read values from environment variables
-const ORG_ID = ENV.TELEX_ORG_ID;
 const CHANNEL_ID = ENV.TELEX_CHANNEL_ID;
-const API_URL = `https://api.telex.im/api/v1/channels/${CHANNEL_ID}/messages`;
+const API_URL = `https://api.telex.im/api/v1/${CHANNEL_ID}/messages`;
 const WEBHOOK_URL = ENV.TELEX_WEBHOOK_URL;
 const POLL_INTERVAL = 5000; // Poll Telex every 5 seconds
 const DUPLICATE_TIME_WINDOW = 10000; // 10 seconds
 
 let lastMessages: Record<string, string> = {}; // Stores { message: username }
 
-// ✅ Function to process speed-game messages manually
-export const processMessageSpeed = async (username: string, message: string) => {
-    console.log(`📩 Processing message from ${username}: "${message}"`);
+// ✅ Function to process incoming messages
+const processMessage = async (msg: any) => {
+    const username = msg.username || "Unknown";
+    const messageContent = msg.content?.trim() || "";
 
-    // ✅ If message is already in memory, declare a winner
-    if (lastMessages[message]) {
-        const firstUser = lastMessages[message];
-        if (firstUser !== username) {
-            await sendSpeedGameResultToTelex(firstUser, username, message);
-            return { message: `🏆 ${firstUser} typed it first!` };
-        }
-    } else {
-        lastMessages[message] = username;
+    if (!messageContent) return; // Ignore empty messages
 
-        // ✅ Remove message after time window to allow new rounds
-        setTimeout(() => {
-            delete lastMessages[message];
-        }, DUPLICATE_TIME_WINDOW);
-    }
+    console.log(`📩 New Message: ${username}: "${messageContent}"`);
 
-    return { message: "Message recorded and waiting for competition!" };
+    await processMessageSpeed(username, messageContent);
 };
 
-// ✅ Function to fetch messages from Telex every 5 seconds
+// ✅ Fetch messages from Telex API every 5 seconds
 const fetchMessagesFromTelex = async () => {
-    if (!ORG_ID || !CHANNEL_ID || !ENV.TELEX_API_TOKEN) {
+    if (!CHANNEL_ID || !ENV.TELEX_API_TOKEN) {
         console.warn("⚠️ Missing Telex environment variables.");
         return;
     }
 
     try {
-        // ✅ Ensure we're fetching up to 50 messages
         const response = await axios.get(`${API_URL}?limit=50`, {
             headers: {
                 Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
@@ -50,10 +37,9 @@ const fetchMessagesFromTelex = async () => {
             },
         });
 
-        console.log("🔍 Full API Response:", response.data); // Log full response
+        console.log("🔍 Full API Response:", response.data); // Debugging logs
 
-        // ✅ Fix: Use `data.messages`, handling null case
-        const messages = response.data?.data?.messages || [];
+        const messages = response.data?.data?.messages || []; // ✅ Handles null case properly
 
         if (!messages.length) {
             console.warn("⚠️ No messages found in Telex channel.");
@@ -75,16 +61,27 @@ const fetchMessagesFromTelex = async () => {
     }
 };
 
-// ✅ Process each new message from Telex
-const processMessage = async (msg: any) => {
-    const username = msg.username || "Unknown";
-    const messageContent = msg.content?.trim() || "";
+// ✅ Process each message and determine the winner
+export const processMessageSpeed = async (username: string, message: string) => {
+    console.log(`📩 Processing message from ${username}: "${message}"`);
 
-    if (!messageContent) return;
+    // ✅ If message exists, declare a winner
+    if (lastMessages[message]) {
+        const firstUser = lastMessages[message];
+        if (firstUser !== username) {
+            await sendSpeedGameResultToTelex(firstUser, username, message);
+            return { message: `🏆 ${firstUser} typed it first!` };
+        }
+    } else {
+        lastMessages[message] = username;
 
-    console.log(`📩 New Message from Telex: ${username}: "${messageContent}"`);
+        // ✅ Remove message after time window to allow new rounds
+        setTimeout(() => {
+            delete lastMessages[message];
+        }, DUPLICATE_TIME_WINDOW);
+    }
 
-    await processMessageSpeed(username, messageContent);
+    return { message: "Message recorded and waiting for competition!" };
 };
 
 // ✅ Announce the winner in the Telex channel via Webhook
@@ -105,7 +102,7 @@ const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string,
             },
         });
 
-        console.log("✅ Sent result to Telex successfully.");
+        console.log("✅ Winner announcement sent to Telex.");
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error("❌ Telex API Error:", {
