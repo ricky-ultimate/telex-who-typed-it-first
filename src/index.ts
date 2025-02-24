@@ -52,8 +52,8 @@ app.post("/process-message", async (req: Request, res: Response): Promise<void> 
 
     const result = await processMessageSpeed(user_id, message);
 
-    // Send result back to Telex
-    await sendSpeedGameResultToTelex(target_url, channel_id, result.message);
+    // ✅ Send result to Telex (Fixed Webhook Payload)
+    await sendSpeedGameResultToTelex(target_url, channel_id, result.message, user_id);
 
     res.json({
       message: result.message,
@@ -92,19 +92,24 @@ const processMessageSpeed = async (user_id: string, message: string): Promise<{ 
 };
 
 /**
- * ✅ Send Result Back to Telex
+ * ✅ Send Result Back to Telex (Fixed Webhook Payload)
  */
 const sendSpeedGameResultToTelex = async (
   targetUrl: string,
   channelId: string,
-  message: string
+  message: string,
+  user_id: string
 ): Promise<void> => {
   try {
-    await axios.post(
-      targetUrl,
-      { channel_id: channelId, message },
-      { headers: { "Content-Type": "application/json" } }
-    );
+    const payload = {
+      channel_id: channelId,
+      message: message,
+      event_name: "result", // ✅ Added event_name
+      status: "success", // ✅ Added status field
+      username: user_id // ✅ Added username field
+    };
+
+    await axios.post(targetUrl, payload, { headers: { "Content-Type": "application/json" } });
 
     logger("✅ Winner announcement sent to Telex.");
   } catch (error) {
