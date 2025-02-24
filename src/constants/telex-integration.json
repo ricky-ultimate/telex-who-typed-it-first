@@ -49,24 +49,22 @@
           "type": "checkbox",
           "description": "Enable leaderboard tracking for fastest users.",
           "default": false
-        },
-        {
-          "label": "Leaderboard Reset Frequency",
-          "type": "dropdown",
-          "description": "Choose how often the leaderboard should reset.",
-          "required": false,
-          "default": "Weekly",
-          "options": ["Daily", "Weekly", "Monthly"]
-        },
-        {
-          "label": "Notification Format",
-          "type": "radio",
-          "description": "Choose the format of the speed game notifications.",
-          "required": true,
-          "default": "Text",
-          "options": ["Text", "Rich Message"]
         }
       ],
+      "metadata": {
+        "user_id": {
+          "description": "Unique user identifier for tracking messages",
+          "required": true
+        },
+        "request_id": {
+          "description": "Unique request identifier for debugging",
+          "required": false
+        },
+        "timestamp": {
+          "description": "Time when message was sent",
+          "required": false
+        }
+      },
       "target_url": "https://telex-who-typed-it-first.onrender.com/process-message"
     }
   }
