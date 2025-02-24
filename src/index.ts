@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
-import axios from "axios";
+import axios, { AxiosError } from "axios"; // ✅ Import AxiosError for better error handling
 import integrationData from "./constants/telex-integration.json";
 import { ENV } from "./constants/env";
 import logger from "./utils/logger.utils";
@@ -52,10 +52,10 @@ app.post("/process-message", async (req: Request, res: Response): Promise<void> 
 
     const result = await processMessageSpeed(user_id, message);
 
-    // ✅ Send response message to Telex
+    // ✅ Send user message to Telex
     await sendUserMessageToTelex(target_url, channel_id, message, user_id, result.event_name);
 
-    // ✅ If a duplicate message is detected, FastBot will announce the winner
+    // ✅ If duplicate detected, FastBot announces the winner
     if (result.winner_announcement) {
       await sendSpeedGameResultToTelex(target_url, channel_id, result.winner_announcement);
     }
@@ -69,8 +69,9 @@ app.post("/process-message", async (req: Request, res: Response): Promise<void> 
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
-    logger("Error processing message:", error);
+  } catch (error: unknown) { // ✅ Explicitly mark error as unknown
+    const err = error as Error; // ✅ Assert error as an instance of Error
+    logger(`❌ Error processing message: ${err.message}`);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -124,32 +125,61 @@ const sendUserMessageToTelex = async (
       username: user_id
     };
 
-    await axios.post(targetUrl, payload, { headers: { "Content-Type": "application/json" } });
+    await axios.post(targetUrl, payload, {
+      headers: { "Content-Type": "application/json" },
+      timeout: 5000 // ✅ Timeout 5 seconds
+    });
 
     logger(`✅ User message (${event_name}) sent to Telex.`);
-  } catch (error) {
-    logger("❌ Error sending user message to Telex:", error);
+  } catch (error: unknown) { // ✅ Fix: Type assertion for error
+    const err = error as AxiosError;
+    logger(`❌ Error sending user message to Telex: ${err.message}`);
+
+    if (err.response) {
+      logger(`❌ Response Data: ${JSON.stringify(err.response.data)}`);
+    }
   }
 };
 
 /**
- * ✅ Send Speed Game Result to Telex (FastBot Announcer)
+ * ✅ Send Speed Game Result to Telex (FastBot Announcer) with Retry Mechanism
  */
-const sendSpeedGameResultToTelex = async (targetUrl: string, channelId: string, winnerMessage: string): Promise<void> => {
-  try {
-    const payload = {
-      channel_id: channelId,
-      message: winnerMessage,
-      event_name: "game_result",
-      status: "success",
-      username: "FastBot" // ✅ FastBot sends the final result
-    };
+const sendSpeedGameResultToTelex = async (
+  targetUrl: string,
+  channelId: string,
+  winnerMessage: string
+): Promise<void> => {
+  const payload = {
+    channel_id: channelId,
+    message: winnerMessage,
+    event_name: "game_result",
+    status: "success",
+    username: "FastBot"
+  };
 
-    await axios.post(targetUrl, payload, { headers: { "Content-Type": "application/json" } });
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      await axios.post(targetUrl, payload, {
+        headers: { "Content-Type": "application/json" },
+        timeout: 5000 // ✅ Timeout 5 seconds
+      });
 
-    logger("✅ FastBot announced the winner on Telex.");
-  } catch (error) {
-    logger("❌ Error sending result to Telex:", error);
+      logger("✅ FastBot announced the winner on Telex.");
+      return;
+    } catch (error: unknown) { // ✅ Fix: Type assertion for error
+      const err = error as AxiosError;
+      attempts++;
+      logger(`❌ Attempt ${attempts} failed: ${err.message}`);
+
+      if (err.response) {
+        logger(`❌ Response Data: ${JSON.stringify(err.response.data)}`);
+      }
+
+      if (attempts >= 3) {
+        logger("❌ Final attempt failed. Abandoning webhook call.");
+      }
+    }
   }
 };
 
