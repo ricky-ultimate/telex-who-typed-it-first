@@ -67,6 +67,6 @@
           "options": ["Text", "Rich Message"]
         }
       ],
-      "target_url": "https://telex-who-typed-it-first.onrender.com/api/speed-game"
+      "target_url": "https://telex-who-typed-it-first.onrender.com/process-message"
     }
   }
