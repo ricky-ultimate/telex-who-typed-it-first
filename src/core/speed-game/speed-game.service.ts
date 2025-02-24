@@ -102,7 +102,7 @@ const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string,
     try {
         await axios.post(WEBHOOK_URL, {
             channel_id: CHANNEL_ID,
-            message: `⚡ **Speed Game Alert!**\nMessage: "${message}"\n🏆 ${firstUser} typed it first!\n🥈 ${secondUser} was too slow!`
+            content: `⚡ **Speed Game Alert!**\nMessage: "${message}"\n🏆 ${firstUser} typed it first!\n🥈 ${secondUser} was too slow!`
         }, {
             headers: {
                 Authorization: `Bearer ${ENV.TELEX_API_TOKEN}`,
