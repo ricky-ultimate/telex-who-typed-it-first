@@ -8,21 +8,11 @@ const WEBHOOK_URL = ENV.TELEX_WEBHOOK_URL;
 const POLL_INTERVAL = 5000; // Poll Telex every 5 seconds
 const DUPLICATE_TIME_WINDOW = 10000; // 10 seconds
 
-let lastMessages: Record<string, string> = {}; // Stores { message: username }
+let lastMessages: Record<string, { username: string; timestamp: number }> = {};
 
-// ✅ Function to process incoming messages
-const processMessage = async (msg: any) => {
-    const username = msg.username || "Unknown";
-    const messageContent = msg.content?.trim() || "";
-
-    if (!messageContent) return; // Ignore empty messages
-
-    console.log(`📩 New Message: ${username}: "${messageContent}"`);
-
-    await processMessageSpeed(username, messageContent);
-};
-
-// ✅ Fetch messages from Telex API every 5 seconds
+/**
+ * ✅ Fetch messages from Telex API every 5 seconds.
+ */
 const fetchMessagesFromTelex = async () => {
     if (!CHANNEL_ID || !ENV.TELEX_API_TOKEN) {
         console.warn("⚠️ Missing Telex environment variables.");
@@ -37,9 +27,10 @@ const fetchMessagesFromTelex = async () => {
             },
         });
 
-        console.log("🔍 Full API Response:", response.data); // Debugging logs
+        console.log("🔍 Full API Response:", response.data);
 
-        const messages = response.data?.data?.messages || []; // ✅ Handles null case properly
+        // ✅ Extract messages safely
+        const messages = response.data?.data?.messages || [];
 
         if (!messages.length) {
             console.warn("⚠️ No messages found in Telex channel.");
@@ -53,27 +44,42 @@ const fetchMessagesFromTelex = async () => {
                 status: error.response.status,
                 data: error.response.data,
             });
-        } else if (error instanceof Error) {
-            console.error("❌ Unexpected error:", error.message);
         } else {
-            console.error("❌ Unknown error occurred while fetching messages.");
+            console.error("❌ Unexpected error:", error);
         }
     }
 };
 
-// ✅ Process each message and determine the winner
+/**
+ * ✅ Process each message and determine the winner.
+ */
+const processMessage = async (msg: any) => {
+    const username = msg.username || "Unknown";
+    const messageContent = msg.content?.trim() || "";
+
+    if (!messageContent) return; // Ignore empty messages
+
+    console.log(`📩 New Message: ${username}: "${messageContent}"`);
+
+    await processMessageSpeed(username, messageContent);
+};
+
+/**
+ * ✅ Core function to process messages and determine who typed first.
+ */
 export const processMessageSpeed = async (username: string, message: string) => {
+    const timestamp = Date.now();
+
     console.log(`📩 Processing message from ${username}: "${message}"`);
 
-    // ✅ If message exists, declare a winner
     if (lastMessages[message]) {
-        const firstUser = lastMessages[message];
+        const firstUser = lastMessages[message].username;
         if (firstUser !== username) {
             await sendSpeedGameResultToTelex(firstUser, username, message);
             return { message: `🏆 ${firstUser} typed it first!` };
         }
     } else {
-        lastMessages[message] = username;
+        lastMessages[message] = { username, timestamp };
 
         // ✅ Remove message after time window to allow new rounds
         setTimeout(() => {
@@ -84,7 +90,9 @@ export const processMessageSpeed = async (username: string, message: string) => 
     return { message: "Message recorded and waiting for competition!" };
 };
 
-// ✅ Announce the winner in the Telex channel via Webhook
+/**
+ * ✅ Announce the winner in the Telex channel via Webhook.
+ */
 const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string, message: string) => {
     if (!WEBHOOK_URL || !CHANNEL_ID) {
         console.warn("⚠️ Missing Telex webhook URL or channel ID.");
@@ -109,10 +117,8 @@ const sendSpeedGameResultToTelex = async (firstUser: string, secondUser: string,
                 status: error.response.status,
                 data: error.response.data,
             });
-        } else if (error instanceof Error) {
-            console.error("❌ Unexpected error:", error.message);
         } else {
-            console.error("❌ Unknown error occurred while sending result.");
+            console.error("❌ Unexpected error:", error);
         }
     }
 };
