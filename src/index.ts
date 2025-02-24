@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
-import axios, { AxiosError } from "axios"; // ✅ Import AxiosError for better error handling
+import axios, { AxiosError } from "axios";
 import integrationData from "./constants/telex-integration.json";
 import { ENV } from "./constants/env";
 import logger from "./utils/logger.utils";
@@ -15,7 +15,7 @@ app.use(helmet());
 app.use(express.json());
 
 const PORT = ENV.PORT || 5000;
-const lastMessages: Record<string, { user_id: string; timestamp: number }> = {};
+const lastMessages: Record<string, { first_user: string; timestamp: number; duplicates: Set<string> }> = {};
 
 // ✅ Ensure Time Window is a number
 const DUPLICATE_TIME_WINDOW = Number(
@@ -69,8 +69,8 @@ app.post("/process-message", async (req: Request, res: Response): Promise<void> 
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error: unknown) { // ✅ Explicitly mark error as unknown
-    const err = error as Error; // ✅ Assert error as an instance of Error
+  } catch (error: unknown) {
+    const err = error as Error;
     logger(`❌ Error processing message: ${err.message}`);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -84,7 +84,8 @@ const processMessageSpeed = async (
   message: string
 ): Promise<{ message: string; event_name: string; winner_announcement?: string }> => {
   if (lastMessages[message]) {
-    const firstUser = lastMessages[message].user_id;
+    const firstUser = lastMessages[message].first_user;
+    lastMessages[message].duplicates.add(user_id);
 
     if (firstUser !== user_id) {
       return {
@@ -94,7 +95,7 @@ const processMessageSpeed = async (
       };
     }
   } else {
-    lastMessages[message] = { user_id, timestamp: Date.now() };
+    lastMessages[message] = { first_user: user_id, timestamp: Date.now(), duplicates: new Set([user_id]) };
 
     setTimeout(() => {
       delete lastMessages[message];
@@ -127,14 +128,13 @@ const sendUserMessageToTelex = async (
 
     await axios.post(targetUrl, payload, {
       headers: { "Content-Type": "application/json" },
-      timeout: 5000 // ✅ Timeout 5 seconds
+      timeout: 5000
     });
 
     logger(`✅ User message (${event_name}) sent to Telex.`);
-  } catch (error: unknown) { // ✅ Fix: Type assertion for error
+  } catch (error: unknown) {
     const err = error as AxiosError;
     logger(`❌ Error sending user message to Telex: ${err.message}`);
-
     if (err.response) {
       logger(`❌ Response Data: ${JSON.stringify(err.response.data)}`);
     }
@@ -162,20 +162,17 @@ const sendSpeedGameResultToTelex = async (
     try {
       await axios.post(targetUrl, payload, {
         headers: { "Content-Type": "application/json" },
-        timeout: 5000 // ✅ Timeout 5 seconds
+        timeout: 5000
       });
-
       logger("✅ FastBot announced the winner on Telex.");
       return;
-    } catch (error: unknown) { // ✅ Fix: Type assertion for error
+    } catch (error: unknown) {
       const err = error as AxiosError;
       attempts++;
       logger(`❌ Attempt ${attempts} failed: ${err.message}`);
-
       if (err.response) {
         logger(`❌ Response Data: ${JSON.stringify(err.response.data)}`);
       }
-
       if (attempts >= 3) {
         logger("❌ Final attempt failed. Abandoning webhook call.");
       }
