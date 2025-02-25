@@ -1,145 +1,139 @@
-# Telex "Who Typed It First?" Speed Game
+### **Who Typed It First? (Speed Game) - Telex Integration**
 
-This is a **Telex Modifier Integration** that detects when multiple users type the same message and announces **who was first** in the Telex channel. It encourages **fast typing, engagement, and fun competition.** 🎉
+This integration enables a fun and competitive speed game in Telex, where users race to type a message first. The bot detects duplicate messages and announces the first person who sent it.
 
-## Features
-- Detects duplicate messages in a Telex channel
-- Sends **each message to Telex** before deciding the winner
-- Announces **who typed it first** in real-time
-- Winner announcement is sent under **"FastBot"** instead of the winner's name
-- Supports configurable settings via Telex
-- Built with **Node.js, Express, TypeScript**
-- Hosted on **Render** for seamless deployment
+---
 
-## Tech Stack
-- **TypeScript** - Strongly typed JavaScript
-- **Node.js** - Backend runtime
-- **Express.js** - Web framework
-- **Axios** - HTTP client for Telex Webhooks
-- **Helmet** - Security headers
-- **CORS** - Cross-origin request handling
-- **Morgan** - Request logging
-- **Render** - Deployment hosting
+## **🚀 Features**
+- Detects duplicate messages within a **configurable time window** (default: **10 seconds**).
+- Announces the first user who typed a message.
+- Responds to **all users** who send the duplicate message within the window.
+- **FastBot** announces the winner.
+- Supports **configurable webhook endpoints** for Telex.
+- Includes **error handling** and **retry mechanisms**.
 
-## Folder Structure
-```
-telex-who-typed-it-first/
-│── src/
-│   ├── constants/ (Environment & Integration JSON)
-│   ├── core/speed-game/ (Main game logic)
-│   ├── routes/ (Express API routes)
-│   ├── utils/ (Helper utilities)
-│── .env (Environment variables)
-│── README.md (This file)
-│── package.json (Node.js dependencies)
-│── tsconfig.json (TypeScript config)
-```
+---
 
-## Setup & Installation
-### 1. Clone the Repository
-```
-git clone https://github.com/telexintegrations/telex-who-typed-it-first.git
-cd telex-who-typed-it-first
-```
+## **⚙️ How It Works**
+1. A user types a message in Telex.
+2. If it's the first occurrence, it gets recorded.
+3. If another user sends the **same message** within the **10-second window**, FastBot announces the **first user** who typed it.
+4. **All users who send the same message** during this period will receive FastBot’s response.
+5. After the window expires, the message resets, allowing a new round to begin.
 
-### 2. Install Dependencies
-```
-npm install
-```
+---
 
-### 3. Set Up Environment Variables
-Create a `.env` file in the root directory and add:
+## **📦 API Endpoints**
+### **1️⃣ Health Check**
+**Endpoint:**
+```http
+GET /health
 ```
-PORT=5000
-TELEX_WEBHOOK_URL="https://api.telex.im/webhook/YOUR_WEBHOOK_ID"
-```
-
-### 4. Run the Project Locally
-```
-npm run dev
-```
-Server should start on `http://localhost:5000`.
-
-## API Endpoints
-| Method | Endpoint               | Description |
-|--------|------------------------|-------------|
-| `POST` | `/api/speed-game`       | Checks who typed a message first |
-| `GET`  | `/api/integration`      | Returns integration JSON |
-
-## Telex Integration JSON
-The integration JSON is accessible at:
-```
-https://telex-who-typed-it-first.onrender.com/api/integration
-```
-
-### How to Add the Integration in Telex
-1. Go to **Telex → Integrations → Add Custom Integration**
-2. Enter the integration JSON URL:
-   ```
-   https://telex-who-typed-it-first.onrender.com/api/integration
-   ```
-3. Click **Save & Enable**
-4. The bot will now process messages in your channel!
-
-## How It Works
-1. **All messages are sent to Telex** before checking for a winner.
-2. If a message is detected again within **5 seconds**, the bot will declare the **first user as the winner**.
-3. **Winner announcement is sent under "FastBot"**, not the winner’s name.
-
-## Testing the Integration
-### 1. Verify API Works
-Use **Postman or CURL** to test the `/api/speed-game` endpoint.
-
-#### ✅ Test Case 1: First Unique Message
-```
-curl -X POST https://telex-who-typed-it-first.onrender.com/api/speed-game \
-     -H "Content-Type: application/json" \
-     -d '{"username": "Alice", "message": "Hello World"}'
-```
-**Expected Response**
-```
+**Response:**
+```json
 {
-  "message": "Message recorded and waiting for competition!"
+  "status": "ok",
+  "timestamp": "2025-02-24T12:00:00.000Z"
 }
 ```
 
-#### ✅ Test Case 2: Duplicate Message (Within 5 Seconds)
+---
+
+### **2️⃣ Process Message**
+**Endpoint:**
+```http
+POST /process-message
 ```
-curl -X POST https://telex-who-typed-it-first.onrender.com/speed-game \
-     -H "Content-Type: application/json" \
-     -d '{"username": "Bob", "message": "Hello World"}'
-```
-**Expected Response**
-```
+**Request Body:**
+```json
 {
-  "message": "🏆 Alice typed it first!"
+  "channel_id": "https://ping.telex.im/v1/webhooks/0195338c-9ee4-7a67-a2d5-4673dbf0cc22",
+  "message": "Hello world!",
+  "target_url": "https://ping.telex.im/v1/webhooks/0195338c-9ee4-7a67-a2d5-4673dbf0cc22",
+  "user_id": "user123",
+  "request_id": "req-abc-123"
+}
+```
+**Responses:**
+- **First message recorded**
+```json
+{
+  "message": "Hello world!",
+  "metadata": {
+    "processed": true,
+    "user_id": "user123",
+    "request_id": "req-abc-123",
+    "timestamp": "2025-02-24T12:00:00.000Z"
+  }
+}
+```
+- **Duplicate detected (FastBot announces the winner)**
+```json
+{
+  "message": "Hello world!",
+  "metadata": {
+    "processed": true,
+    "user_id": "user456",
+    "request_id": "req-def-456",
+    "timestamp": "2025-02-24T12:00:05.000Z"
+  }
+}
+```
+FastBot then sends:
+```json
+{
+  "channel_id": "https://ping.telex.im/v1/webhooks/0195338c-9ee4-7a67-a2d5-4673dbf0cc22",
+  "message": "🏆 user123 typed it first!",
+  "event_name": "game_result",
+  "status": "success",
+  "username": "FastBot"
 }
 ```
 
-### 2. Verify Inside Telex
-1. Open your **Telex channel**
-2. The bot should reply:
-   ```
-   ⚡ Speed Game Alert!
-   Message: "Hello World"
-   🏆 Alice typed it first!
-   🥈 Bob was too slow!
-   ```
-
-## Deployment (Render)
-The API is hosted on **Render** at:
-```
-https://telex-who-typed-it-first.onrender.com
-```
-
-To deploy updates:
-```
-git push origin main
-```
-Render will automatically detect and deploy changes.
-
-## Screenshots of Integration Working in Telex
+---
 ![Telex Screenshot](assets/image.png)
+---
 
-## License
-This project is licensed under the MIT License.
+## **🛠️ Configuration**
+This integration uses **environment variables** to configure the bot.
+
+| Variable | Description | Default |
+|----------|------------|---------|
+| `PORT` | Server port | `5000` |
+| `TELEX_WEBHOOK_URL` | Webhook URL for sending results to Telex | _Required_ |
+| `TELEX_CHANNEL_ID` | Telex Channel ID | _Required_ |
+| `TELEX_API_TOKEN` | API Token for authentication | _Required_ |
+| `DUPLICATE_TIME_WINDOW` | Time (seconds) before the message resets | `10` |
+
+---
+
+## **📝 Notes**
+- The **default time window is 10 seconds** but can be configured.
+- **All duplicate messages within the time window get a response** from FastBot.
+- If **Telex API fails**, the bot **retries 3 times** before stopping.
+- **FastBot always announces the first user** who sent the message.
+
+---
+
+## **🚀 Getting Started**
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/telexintegrations/telex-who-typed-it-first.git
+   cd telex-speed-game
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+3. Create a `.env` file and configure variables.
+4. Start the server:
+   ```sh
+   npm start
+   ```
+5. Use **Postman**  to test the `/process-message` endpoint.
+
+---
+
+## **📜 License**
+MIT License
+This project is open-source and free to use.
